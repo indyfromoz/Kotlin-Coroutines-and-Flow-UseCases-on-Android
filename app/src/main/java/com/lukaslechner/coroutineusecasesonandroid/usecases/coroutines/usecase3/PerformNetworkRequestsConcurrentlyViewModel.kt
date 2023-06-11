@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.lukaslechner.coroutineusecasesonandroid.base.BaseViewModel
 import com.lukaslechner.coroutineusecasesonandroid.mock.MockApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import java.lang.Exception
 
@@ -30,16 +31,14 @@ class PerformNetworkRequestsConcurrentlyViewModel(
     fun performNetworkRequestsConcurrently() {
         uiState.value = UiState.Loading
         viewModelScope.launch {
-            try {
-                val oreoFeatureDeferred = viewModelScope.async { mockApi.getAndroidVersionFeatures(27) }
-                val pieFeatureDeferred = viewModelScope.async { mockApi.getAndroidVersionFeatures(28) }
-                val android10FeatureDeferred = viewModelScope.async { mockApi.getAndroidVersionFeatures(29) }
+            val oreoFeatureDeferred = viewModelScope.async { mockApi.getAndroidVersionFeatures(27) }
+            val pieFeatureDeferred = viewModelScope.async { mockApi.getAndroidVersionFeatures(28) }
+            val android10FeatureDeferred =
+                viewModelScope.async { mockApi.getAndroidVersionFeatures(29) }
 
-                val versionFeatures = listOf(
-                    oreoFeatureDeferred.await(),
-                    pieFeatureDeferred.await(),
-                    android10FeatureDeferred.await()
-                )
+            try {
+                val versionFeatures =
+                    awaitAll(oreoFeatureDeferred, pieFeatureDeferred, android10FeatureDeferred)
                 uiState.value = UiState.Success(versionFeatures)
             } catch (ex: Exception) {
                 uiState.value = UiState.Error("Network Request failed")
